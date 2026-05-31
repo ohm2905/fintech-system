@@ -64,6 +64,9 @@ jobs:
           # Navigate to project directory
           cd ${{ secrets.PROJECT_DIR }}
           
+          # Clean up unused docker data (images, builder cache, stopped containers) to free up disk space
+          sudo docker system prune -a -f
+          
           # Pull latest changes from main branch
           git pull origin main
           
@@ -75,3 +78,6 @@ jobs:
             sudo docker compose down
             sudo docker compose up -d --build
           fi
+          
+          # Clean up dangling build assets
+          sudo docker system prune -f
