@@ -67,11 +67,11 @@ jobs:
           # Pull latest changes from main branch
           git pull origin main
           
-          # Rebuild and restart the Docker containers
+          # Rebuild and restart the Docker containers using sudo
           if command -v docker-compose &> /dev/null; then
-            docker-compose down
-            docker-compose up -d --build
+            sudo docker-compose down
+            sudo docker-compose up -d --build
           else
-            docker compose down
-            docker compose up -d --build
+            sudo docker compose down
+            sudo docker compose up -d --build
           fi
