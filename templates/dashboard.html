@@ -56,58 +56,297 @@
 
 </div>
 
-<!-- ➕ Add Stock -->
-<h3 class="mt-5">Add Stock</h3>
+<!-- ➕ Register Stock Transaction -->
+<h3 class="mt-5">Register Stock Transaction</h3>
 
 <div class="card p-3 shadow mt-3">
-    <div class="row">
-
-        <div class="col-md-3">
-            <input type="text" id="stock_name" class="form-control" placeholder="Stock (TCS)">
+    <div class="row g-3">
+        <div class="col-md-2">
+            <label for="transaction_type" class="form-label">Action</label>
+            <select id="transaction_type" class="form-select">
+                <option value="BUY">BUY</option>
+                <option value="SELL">SELL</option>
+            </select>
         </div>
 
-        <div class="col-md-3">
-            <input type="number" id="quantity" class="form-control" placeholder="Quantity">
+        <div class="col-md-2 position-relative">
+            <label for="stock_name" class="form-label">Stock Name</label>
+            <input type="text" id="stock_name" class="form-control text-uppercase" placeholder="E.g., TCS" autocomplete="off">
+            <div id="stock-name-suggestions" class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto; top: 100%;"></div>
         </div>
 
-        <div class="col-md-3">
-            <input type="number" id="buy_price" class="form-control" placeholder="Buy Price">
+        <div class="col-md-2">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" id="quantity" class="form-control" placeholder="Qty" min="1">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <label for="buy_price" class="form-label">Price per Share</label>
+            <input type="number" id="buy_price" class="form-control" placeholder="Price" min="0.01" step="any">
+        </div>
+
+        <div class="col-md-2">
+            <label for="transaction_date" class="form-label">Date</label>
+            <input type="date" id="transaction_date" class="form-control">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
             <button onclick="addStock()" class="btn btn-primary w-100">
-                Add Stock
+                Log Transaction
             </button>
         </div>
-
     </div>
 </div>
 
-<!-- 📄 Portfolio -->
-<h3 class="mt-5">My Portfolio</h3>
+<!-- 📄 Portfolio Holdings & 📊 Distribution -->
+<div class="row mt-5">
+    <!-- Left Column: Portfolio Table & Controls -->
+    <div class="col-lg-8">
+        <h3>My Portfolio Holdings</h3>
+        <div class="card p-3 shadow mt-3 mb-4">
+            <!-- Filter Controls -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <input type="text" id="search-portfolio" class="form-control" placeholder="Search by Stock (e.g. TCS)" oninput="filterPortfolio()">
+                </div>
+                <div class="col-md-3">
+                    <select id="sort-by-portfolio" class="form-select" onchange="filterPortfolio()">
+                        <option value="stock">Sort by Name</option>
+                        <option value="quantity">Sort by Qty</option>
+                        <option value="buy_price">Sort by Avg Buy</option>
+                        <option value="current_price">Sort by Current Price</option>
+                        <option value="investment">Sort by Total Cost</option>
+                        <option value="current_value">Sort by Value</option>
+                        <option value="profit_loss">Sort by P/L</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="sort-order-portfolio" class="form-select" onchange="filterPortfolio()">
+                        <option value="asc">ASC</option>
+                        <option value="desc">DESC</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="limit-portfolio" class="form-select" onchange="filterPortfolio()">
+                        <option value="5">5 rows</option>
+                        <option value="10">10 rows</option>
+                        <option value="20">20 rows</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button onclick="resetPortfolioFilters()" class="btn btn-secondary w-100">Reset</button>
+                </div>
+            </div>
 
-<table class="table table-bordered mt-3">
-    <thead class="table-dark">
-        <tr>
-            <th>Stock</th>
-            <th>Qty</th>
-            <th>Buy</th>
-            <th>Current</th>
-            <th>P/L</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="portfolio-table"></tbody>
-</table>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Stock</th>
+                            <th>Qty</th>
+                            <th>Avg Buy</th>
+                            <th>Current Price</th>
+                            <th>Total Cost</th>
+                            <th>Current Value</th>
+                            <th>Profit / Loss (ROI)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-table"></tbody>
+                </table>
+            </div>
 
-<!-- 📊 Chart -->
-<h3 class="mt-5">Portfolio Distribution</h3>
-
-<div class="card p-3 shadow">
-    <div class="card p-3 shadow">
-        <div style="max-width:400px; margin:auto;">
-            <canvas id="portfolioChart"></canvas>
+            <!-- Pagination Footer -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div id="portfolio-pagination-info" class="text-muted small">Showing 0 of 0 entries</div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" id="portfolio-prev-page-item">
+                            <button class="page-link" onclick="changePortfolioPage(-1)">Previous</button>
+                        </li>
+                        <li class="page-item active"><span class="page-link" id="portfolio-current-page-num">1</span></li>
+                        <li class="page-item" id="portfolio-next-page-item">
+                            <button class="page-link" onclick="changePortfolioPage(1)">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
+    </div>
+
+    <!-- Right Column: Improved Portfolio Distribution Chart -->
+    <div class="col-lg-4">
+        <h3>Portfolio Distribution</h3>
+        <div class="card p-3 shadow mt-3 mb-4 d-flex flex-column" style="min-height: 420px;">
+            <div class="position-relative" style="height: 220px; width: 100%;">
+                <canvas id="portfolioChart"></canvas>
+                <!-- Central Total Portfolio Value display -->
+                <div id="chart-center-label" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Portfolio Value</div>
+                    <div id="center-total-value" style="font-size: 18px; font-weight: bold; color: #212529;">Rs 0.00</div>
+                </div>
+            </div>
+            
+            <!-- Sleek custom HTML legend for showing percentages and values beautifully -->
+            <div class="mt-4 border-top pt-2 flex-grow-1 overflow-auto" id="chart-legend-container" style="max-height: 180px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 📈 7-Day Stock Price Forecast Row -->
+<div class="row mt-5" id="forecast-section" style="display: none;">
+    <!-- Left Column: Forecast Chart -->
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <h3 class="mb-0">7-Day Stock Price Forecast</h3>
+            <div class="position-relative" style="width: 250px;">
+                <div class="input-group input-group-sm">
+                    <input type="text" id="forecast-search-input" class="form-control text-uppercase" placeholder="Enter Ticker (e.g. TCS)" autocomplete="off" onkeydown="if(event.key === 'Enter') submitForecastSearch()">
+                    <button class="btn btn-primary" type="button" onclick="submitForecastSearch()">Forecast</button>
+                </div>
+                <div id="forecast-search-suggestions" class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto; top: 100%;"></div>
+            </div>
+        </div>
+        <div class="card p-3 shadow mt-2 mb-4 d-flex flex-column" style="min-height: 420px;">
+            <div id="forecast-loading" class="d-flex justify-content-center align-items-center flex-grow-1" style="height: 300px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading forecast...</span>
+                </div>
+            </div>
+            <div id="forecast-chart-container" style="height: 320px; position: relative; display: none;">
+                <canvas id="forecastChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Forecast Metrics Summary -->
+    <div class="col-lg-4">
+        <h3>Forecast Summary</h3>
+        <div class="card p-3 shadow mt-3 mb-4 d-flex flex-column justify-content-between" style="min-height: 420px;">
+            <div class="pt-2">
+                <div class="mb-4">
+                    <span class="badge bg-secondary text-uppercase px-2 py-1 mb-2" id="forecast-stock-badge">-</span>
+                    <h4 class="fw-bold text-dark" id="forecast-title-name">Select a Stock</h4>
+                    <small class="text-muted">7-Day Trend projection metrics</small>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-2 bg-light">
+                            <small class="text-muted d-block text-xs" style="font-size: 10px; font-weight: 500;">Current Price</small>
+                            <strong class="fs-6 text-dark" id="forecast-metrics-current">Rs 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 bg-light">
+                            <small class="text-muted d-block text-xs" style="font-size: 10px; font-weight: 500;">Projected (7d)</small>
+                            <strong class="fs-6 text-dark" id="forecast-metrics-projected">Rs 0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Expected 7-Day Change</small>
+                        <span class="badge fw-bold" id="forecast-metrics-pct" style="font-size: 12px;">0.00%</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar" id="forecast-metrics-progress" role="progressbar" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 bg-light">
+                    <small class="text-muted d-block mb-1">Projected Bounds in 7 Days</small>
+                    <div class="d-flex justify-content-between align-items-center small">
+                        <span>Lower Bound:</span>
+                        <strong class="text-secondary" id="forecast-metrics-lower">Rs 0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center small mt-1">
+                        <span>Upper Bound:</span>
+                        <strong class="text-secondary" id="forecast-metrics-upper">Rs 0.00</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-muted small border-top pt-3 mt-3" style="font-size: 11px;">
+                💡 Projections are calculated using Ordinary Least Squares linear trend regression based on the last 60 days of historical NSE closing prices. The shaded region represents a 95% confidence interval scaling over time.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📄 Transaction Ledger -->
+<h3 class="mt-5">Transaction History Ledger</h3>
+
+<div class="card p-3 shadow mt-3 mb-5">
+    <!-- Filter Controls -->
+    <div class="row g-2 mb-3">
+        <div class="col-md-2">
+            <input type="text" id="search-tx" class="form-control" placeholder="Search by Stock Name (e.g. TCS)" oninput="filterTransactions()">
+        </div>
+        <div class="col-md-2">
+            <input type="date" id="start-date-tx" class="form-control" onchange="filterTransactions()" placeholder="Start Date">
+        </div>
+        <div class="col-md-2">
+            <input type="date" id="end-date-tx" class="form-control" onchange="filterTransactions()" placeholder="End Date">
+        </div>
+        <div class="col-md-2">
+            <select id="sort-by-tx" class="form-select" onchange="filterTransactions()">
+                <option value="date">Sort by Date</option>
+                <option value="stock_name">Sort by Name</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select id="sort-order-tx" class="form-select" onchange="filterTransactions()">
+                <option value="desc">DESC</option>
+                <option value="asc">ASC</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select id="limit-tx" class="form-select" onchange="filterTransactions()">
+                <option value="5">5 rows</option>
+                <option value="10">10 rows</option>
+                <option value="20">20 rows</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button onclick="resetFilters()" class="btn btn-secondary w-100">Reset</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total Value</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-table-body">
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No transactions found.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div id="pagination-info" class="text-muted small">Showing 0 of 0 entries</div>
+        <nav>
+            <ul class="pagination mb-0">
+                <li class="page-item" id="prev-page-item">
+                    <button class="page-link" onclick="changePage(-1)">Previous</button>
+                </li>
+                <li class="page-item active"><span class="page-link" id="current-page-num">1</span></li>
+                <li class="page-item" id="next-page-item">
+                    <button class="page-link" onclick="changePage(1)">Next</button>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
 
@@ -116,6 +355,7 @@
 <script>
 
 const token = localStorage.getItem("access");
+const today = new Date();
 
 if (!token) {
     window.location.href = "/login/";
@@ -144,19 +384,27 @@ function format(num) {
     return parseFloat(num).toFixed(2);
 }
 
+let currentPortfolioPage = 1;
+
 // 🔹 Load Data
 async function loadData() {
-    const res = await fetchAuth("/api/portfolio/summary/");
+    const search = document.getElementById("search-portfolio").value;
+    const sortBy = document.getElementById("sort-by-portfolio").value;
+    const order = document.getElementById("sort-order-portfolio").value;
+    const limit = document.getElementById("limit-portfolio").value;
+
+    const url = `/api/portfolio/summary/?page=${currentPortfolioPage}&limit=${limit}&search=${encodeURIComponent(search)}&sort_by=${sortBy}&order=${order}`;
+    const res = await fetchAuth(url);
     if (!res) return;
 
     const data = await res.json();
 
     // Summary
-    document.getElementById("investment").innerText = format(data.total_investment);
-    document.getElementById("current").innerText = format(data.total_current_value);
+    document.getElementById("investment").innerText = "Rs " + format(data.total_investment);
+    document.getElementById("current").innerText = "Rs " + format(data.total_current_value);
 
     const profitEl = document.getElementById("profit");
-    profitEl.innerText = format(data.overall_profit_loss);
+    profitEl.innerText = (data.overall_profit_loss >= 0 ? "+" : "") + "Rs " + format(data.overall_profit_loss);
     profitEl.style.color = data.overall_profit_loss >= 0 ? "green" : "red";
 
     // Analytics
@@ -171,31 +419,70 @@ async function loadData() {
     const table = document.getElementById("portfolio-table");
     table.innerHTML = "";
 
-    data.stocks.forEach(s => {
-        const color = s.profit_loss >= 0 ? "green" : "red";
+    const stocks = data.stocks || [];
+    const total = data.total || 0;
 
-        table.innerHTML += `
-            <tr>
-                <td>${s.stock}</td>
-                <td>${s.quantity}</td>
-                <td>${format(s.buy_price)}</td>
-                <td>${format(s.current_price)}</td>
-                <td style="color:${color}">
-                    ${format(s.profit_loss)}
-                </td>
-                <td>
-                    <button onclick="deleteStock(${s.id})"
-                        class="btn btn-danger btn-sm">
-                        Delete
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
+    if (stocks.length === 0) {
+        table.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No holdings found.</td></tr>`;
+        document.getElementById("portfolio-pagination-info").innerText = "Showing 0 of 0 entries";
+        document.getElementById("portfolio-prev-page-item").classList.add("disabled");
+        document.getElementById("portfolio-next-page-item").classList.add("disabled");
+        document.getElementById("portfolio-current-page-num").innerText = currentPortfolioPage;
+    } else {
+        stocks.forEach(s => {
+            const cost = s.quantity * s.buy_price;
+            const val = s.quantity * s.current_price;
+            const isProfit = s.profit_loss >= 0;
+            const color = isProfit ? "green" : "red";
+            const prefix = isProfit ? "+" : "";
 
-    // Chart
-    const labels = data.stocks.map(s => s.stock);
-    const values = data.stocks.map(s => s.current_value);
+            table.innerHTML += `
+                <tr id="portfolio-row-${s.stock}" onclick="selectStockForecast('${s.stock}', this)" style="cursor: pointer; transition: background-color 0.15s ease;">
+                    <td><strong>${s.stock}</strong></td>
+                    <td>${s.quantity}</td>
+                    <td>Rs ${format(s.buy_price)}</td>
+                    <td>Rs ${format(s.current_price)}</td>
+                    <td>Rs ${format(cost)}</td>
+                    <td>Rs ${format(val)}</td>
+                    <td style="color:${color}; font-weight: 500;">
+                        ${prefix}Rs ${format(s.profit_loss)} (${prefix}${format(s.roi_percent)}%)
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Update Pagination Info
+        const startRange = (currentPortfolioPage - 1) * limit + 1;
+        const endRange = Math.min(currentPortfolioPage * limit, total);
+        document.getElementById("portfolio-pagination-info").innerText = `Showing ${startRange}-${endRange} of ${total} entries`;
+        document.getElementById("portfolio-current-page-num").innerText = currentPortfolioPage;
+
+        // Previous button control
+        if (currentPortfolioPage <= 1) {
+            document.getElementById("portfolio-prev-page-item").classList.add("disabled");
+        } else {
+            document.getElementById("portfolio-prev-page-item").classList.remove("disabled");
+        }
+
+        // Next button control
+        if (currentPortfolioPage * limit >= total) {
+            document.getElementById("portfolio-next-page-item").classList.add("disabled");
+        } else {
+            document.getElementById("portfolio-next-page-item").classList.remove("disabled");
+        }
+    }
+
+    // Chart & Custom Legend
+    const allStocks = data.all_stocks || [];
+    document.getElementById("center-total-value").innerText = "Rs " + format(data.total_current_value);
+
+    const labels = allStocks.map(s => s.stock);
+    const values = allStocks.map(s => s.current_value);
+
+    const modernColors = [
+        "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6",
+        "#14b8a6", "#f97316", "#3b82f6", "#ef4444", "#64748b"
+    ];
 
     if (window.chart) window.chart.destroy();
 
@@ -207,59 +494,247 @@ async function loadData() {
                 labels,
                 datasets: [{
                     data: values,
-                    backgroundColor: [
-                        "#4CAF50",
-                        "#2196F3",
-                        "#FFC107",
-                        "#E91E63",
-                        "#9C27B0"
-                    ]
+                    backgroundColor: modernColors.slice(0, allStocks.length).concat(
+                        Array(Math.max(0, allStocks.length - modernColors.length)).fill("#cbd5e1")
+                    ),
+                    borderWidth: 2,
+                    hoverOffset: 6
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false   // 🔥 IMPORTANT
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // Hide default legend
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const pct = data.total_current_value > 0 ? ((val / data.total_current_value) * 100).toFixed(1) : 0;
+                                return ` ${context.label}: Rs ${format(val)} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '72%' // Modern thinner ring
             }
         }
     );
+
+    // Custom Legend Rendering
+    const legendContainer = document.getElementById("chart-legend-container");
+    legendContainer.innerHTML = "";
+    
+    // Sort all stocks by value descending for display in the list
+    const sortedAllStocks = [...allStocks].sort((a, b) => b.current_value - a.current_value);
+
+    if (sortedAllStocks.length === 0) {
+        legendContainer.innerHTML = `<div class="text-center text-muted small py-3">No holdings to display</div>`;
+    } else {
+        sortedAllStocks.forEach((s, idx) => {
+            const pct = data.total_current_value > 0 ? ((s.current_value / data.total_current_value) * 100).toFixed(1) : 0;
+            const originalIndex = allStocks.findIndex(item => item.stock === s.stock);
+            const color = modernColors[originalIndex % modernColors.length];
+
+            legendContainer.innerHTML += `
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-light" style="font-size: 13px;">
+                    <div class="d-flex align-items-center">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${color}; margin-right:8px;"></span>
+                        <span class="fw-bold">${s.stock}</span>
+                    </div>
+                    <div class="text-muted small">
+                        <span>Rs ${format(s.current_value)}</span>
+                        <span class="badge bg-light text-dark ms-1">${pct}%</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // Trigger Forecast Chart
+    if (stocks.length > 0) {
+        let stockToForecast = stocks[0].stock;
+        
+        // Keep active selection if it's still present in the current page
+        const isStillPresent = stocks.some(s => s.stock === activeForecastStock);
+        if (isStillPresent) {
+            stockToForecast = activeForecastStock;
+        }
+        
+        // Call selectStockForecast dynamically after DOM renders
+        setTimeout(() => {
+            selectStockForecast(stockToForecast);
+        }, 15);
+    } else {
+        // If there are no holdings, load TCS as a popular default stock forecast so the section is always visual and usable!
+        setTimeout(() => {
+            selectStockForecast("TCS");
+        }, 15);
+    }
 }
 
-// ➕ Add Stock
+// 🔹 Portfolio callbacks
+function filterPortfolio() {
+    currentPortfolioPage = 1;
+    loadData();
+}
+
+function changePortfolioPage(offset) {
+    currentPortfolioPage += offset;
+    loadData();
+}
+
+function resetPortfolioFilters() {
+    document.getElementById("search-portfolio").value = "";
+    document.getElementById("sort-by-portfolio").value = "stock";
+    document.getElementById("sort-order-portfolio").value = "asc";
+    document.getElementById("limit-portfolio").value = "5";
+    currentPortfolioPage = 1;
+    loadData();
+}
+
+// Set transaction date input to today
+document.getElementById("transaction_date").value = today.toISOString().substring(0, 10);
+
+let currentTxPage = 1;
+
+// 📄 Load Transactions history
+async function loadTransactions() {
+    const search = document.getElementById("search-tx").value;
+    const startDate = document.getElementById("start-date-tx").value;
+    const endDate = document.getElementById("end-date-tx").value;
+    const sortBy = document.getElementById("sort-by-tx").value;
+    const order = document.getElementById("sort-order-tx").value;
+    const limit = document.getElementById("limit-tx").value;
+
+    const url = `/api/portfolio/transactions/?page=${currentTxPage}&limit=${limit}&search=${encodeURIComponent(search)}&start_date=${startDate}&end_date=${endDate}&sort_by=${sortBy}&order=${order}`;
+    const res = await fetchAuth(url);
+    if (!res) return;
+    const responseData = await res.json();
+
+    const tbody = document.getElementById("transaction-table-body");
+    tbody.innerHTML = "";
+
+    const transactions = responseData.data || [];
+    const total = responseData.total || 0;
+
+    if (transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No transactions found.</td></tr>`;
+        document.getElementById("pagination-info").innerText = "Showing 0 of 0 entries";
+        document.getElementById("prev-page-item").classList.add("disabled");
+        document.getElementById("next-page-item").classList.add("disabled");
+        document.getElementById("current-page-num").innerText = currentTxPage;
+        return;
+    }
+
+    transactions.forEach(t => {
+        const totalValue = t.quantity * t.price;
+        const badgeClass = t.transaction_type === 'BUY' ? 'bg-success' : 'bg-danger';
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${t.date}</td>
+            <td><strong>${t.stock_name}</strong></td>
+            <td><span class="badge ${badgeClass}">${t.transaction_type}</span></td>
+            <td>${t.quantity}</td>
+            <td>Rs ${format(t.price)}</td>
+            <td>Rs ${format(totalValue)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Update Pagination Info
+    const startRange = (currentTxPage - 1) * limit + 1;
+    const endRange = Math.min(currentTxPage * limit, total);
+    document.getElementById("pagination-info").innerText = `Showing ${startRange}-${endRange} of ${total} entries`;
+    document.getElementById("current-page-num").innerText = currentTxPage;
+
+    // Previous button control
+    if (currentTxPage <= 1) {
+        document.getElementById("prev-page-item").classList.add("disabled");
+    } else {
+        document.getElementById("prev-page-item").classList.remove("disabled");
+    }
+
+    // Next button control
+    if (currentTxPage * limit >= total) {
+        document.getElementById("next-page-item").classList.add("disabled");
+    } else {
+        document.getElementById("next-page-item").classList.remove("disabled");
+    }
+}
+
+// 🔹 Filter/Page callbacks
+function filterTransactions() {
+    currentTxPage = 1;
+    loadTransactions();
+}
+
+function changePage(offset) {
+    currentTxPage += offset;
+    loadTransactions();
+}
+
+function resetFilters() {
+    document.getElementById("search-tx").value = "";
+    document.getElementById("start-date-tx").value = "";
+    document.getElementById("end-date-tx").value = "";
+    document.getElementById("sort-by-tx").value = "date";
+    document.getElementById("sort-order-tx").value = "desc";
+    document.getElementById("limit-tx").value = "5";
+    currentTxPage = 1;
+    loadTransactions();
+}
+
+
+// ➕ Add Stock Transaction
 async function addStock() {
-    const stock_name = document.getElementById("stock_name").value;
+    const transaction_type = document.getElementById("transaction_type").value;
+    const stock_name = document.getElementById("stock_name").value.trim().toUpperCase();
     const quantity = document.getElementById("quantity").value;
     const buy_price = document.getElementById("buy_price").value;
+    const date = document.getElementById("transaction_date").value;
 
-    if (!stock_name || !quantity || !buy_price) {
+    if (!stock_name || !quantity || !buy_price || !date) {
         alert("Fill all fields");
+        return;
+    }
+
+    const isValidStock = await validateStockTicker(stock_name);
+    if (!isValidStock) {
+        alert(`"${stock_name}" is not supported. Please choose a stock from the suggestions dropdown list.`);
         return;
     }
 
     const res = await fetchAuth("/api/portfolio/add/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock_name, quantity, buy_price })
+        body: JSON.stringify({ transaction_type, stock_name, quantity, buy_price, date })
     });
 
     if (!res) return;
 
     if (res.ok) {
-        alert("Added successfully");
+        alert("Transaction registered successfully");
 
         document.getElementById("stock_name").value = "";
         document.getElementById("quantity").value = "";
         document.getElementById("buy_price").value = "";
+        document.getElementById("transaction_date").value = today.toISOString().substring(0, 10);
 
         loadData();
+        loadTransactions();
     } else {
-        alert("Error adding stock");
+        const err = await res.json();
+        alert(err.error || "Error adding transaction");
     }
 }
 
-// ❌ Delete Stock
+// ❌ Delete Stock holdings (deletes all transactions of this stock too)
 async function deleteStock(id) {
-
-    if (!confirm("Delete this stock?")) return;
+    if (!confirm("Are you sure you want to delete this stock? This will delete all its transaction history ledger entries.")) return;
 
     const res = await fetchAuth(`/api/portfolio/delete/${id}/`, {
         method: "DELETE"
@@ -270,14 +745,449 @@ async function deleteStock(id) {
     if (res.ok) {
         alert("Deleted successfully");
         loadData();
+        loadTransactions();
     } else {
         alert("Error deleting stock");
     }
 }
 
+let forecastChart = null;
+let activeForecastStock = "";
+
+function selectStockForecast(stockSymbol, element) {
+    // Remove active class from all rows
+    const rows = document.querySelectorAll("#portfolio-table tr");
+    rows.forEach(r => r.classList.remove("table-active-row"));
+    
+    // Add active class to clicked row
+    if (element) {
+        element.classList.add("table-active-row");
+    } else {
+        const row = document.getElementById(`portfolio-row-${stockSymbol}`);
+        if (row) row.classList.add("table-active-row");
+    }
+    
+    loadForecast(stockSymbol);
+}
+
+async function loadForecast(stockSymbol) {
+    if (!stockSymbol) return;
+    activeForecastStock = stockSymbol;
+    
+    const section = document.getElementById("forecast-section");
+    const loader = document.getElementById("forecast-loading");
+    const chartContainer = document.getElementById("forecast-chart-container");
+    
+    section.style.display = "flex";
+    
+    // Toggle loader visibility using classList to bypass Bootstrap's !important on d-flex
+    loader.classList.remove("d-none");
+    loader.classList.add("d-flex");
+    chartContainer.style.display = "none";
+    
+    const res = await fetchAuth(`/api/portfolio/forecast/?stock=${stockSymbol}`);
+    if (!res) {
+        loader.classList.remove("d-flex");
+        loader.classList.add("d-none");
+        return;
+    }
+    
+    const data = await res.json();
+    if (!res.ok) {
+        // Display error state in loader
+        loader.innerHTML = `<div class="text-danger p-4 text-center">⚠️ Error: ${data.error || 'Failed to load forecast'}</div>`;
+        return;
+    }
+    
+    // Restore loader original spinner
+    loader.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading forecast...</span>
+        </div>
+    `;
+    
+    loader.classList.remove("d-flex");
+    loader.classList.add("d-none");
+    chartContainer.style.display = "block";
+    
+    // Update Forecast summary metrics
+    document.getElementById("forecast-stock-badge").innerText = data.stock;
+    document.getElementById("forecast-title-name").innerText = `${data.stock} Forecast`;
+    
+    const currentPrice = data.current_price;
+    const projectedPrice = data.forecast_prices[6]; // 7th day
+    const pctChange = ((projectedPrice - currentPrice) / currentPrice) * 100;
+    
+    document.getElementById("forecast-metrics-current").innerText = "Rs " + format(currentPrice);
+    document.getElementById("forecast-metrics-projected").innerText = "Rs " + format(projectedPrice);
+    
+    const pctEl = document.getElementById("forecast-metrics-pct");
+    pctEl.innerText = (pctChange >= 0 ? "+" : "") + format(pctChange) + "%";
+    pctEl.className = `badge fw-bold bg-${pctChange >= 0 ? 'success' : 'danger'}`;
+    
+    // progress bar visual pacing (centered at 50%, e.g. -10% is 0%, +10% is 100%)
+    const clampedPct = Math.max(-10, Math.min(10, pctChange));
+    const progressPercent = 50 + (clampedPct * 5); // scales -10 to 10 onto 0 to 100
+    const progressBar = document.getElementById("forecast-metrics-progress");
+    progressBar.style.width = `${progressPercent}%`;
+    progressBar.className = `progress-bar bg-${pctChange >= 0 ? 'success' : 'danger'}`;
+    
+    document.getElementById("forecast-metrics-lower").innerText = "Rs " + format(data.lower_bound[6]);
+    document.getElementById("forecast-metrics-upper").innerText = "Rs " + format(data.upper_bound[6]);
+    
+    // Render Forecast Chart.js
+    const historyLen = data.history_prices.length;
+    const forecastLen = data.forecast_prices.length;
+    
+    // Combine labels
+    const combinedLabels = [...data.history_dates, ...data.forecast_dates];
+    
+    // History Price vector padded with nulls for forecast duration
+    const historyPricesPadded = [...data.history_prices, ...Array(forecastLen).fill(null)];
+    
+    // Last history point is the starting point of the forecast lines to make them continuous
+    const lastHistoryPrice = data.history_prices[historyLen - 1];
+    
+    // Forecast Price vector padded with nulls for history duration
+    const forecastPricesPadded = [...Array(historyLen - 1).fill(null), lastHistoryPrice, ...data.forecast_prices];
+    const upperBoundsPadded = [...Array(historyLen - 1).fill(null), lastHistoryPrice, ...data.upper_bound];
+    const lowerBoundsPadded = [...Array(historyLen - 1).fill(null), lastHistoryPrice, ...data.lower_bound];
+    
+    if (forecastChart) forecastChart.destroy();
+    
+    const ctx = document.getElementById("forecastChart").getContext("2d");
+    forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: combinedLabels,
+            datasets: [
+                {
+                    label: 'Historical Close',
+                    data: historyPricesPadded,
+                    borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    borderWidth: 2.5,
+                    tension: 0.15,
+                    pointRadius: 2,
+                    fill: false
+                },
+                {
+                    label: '7-Day Forecast',
+                    data: forecastPricesPadded,
+                    borderColor: '#f59e0b',
+                    borderWidth: 2.5,
+                    borderDash: [6, 4],
+                    tension: 0.15,
+                    pointRadius: 2,
+                    fill: false
+                },
+                {
+                    label: 'Upper Bound',
+                    data: upperBoundsPadded,
+                    borderColor: 'rgba(245, 158, 11, 0.25)',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: '+1', // fill down to lower bound dataset
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)'
+                },
+                {
+                    label: 'Lower Bound',
+                    data: lowerBoundsPadded,
+                    borderColor: 'rgba(245, 158, 11, 0.25)',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        filter: function(item) {
+                            // Hide upper/lower bounds labels to keep legend clean
+                            return item.text !== 'Upper Bound' && item.text !== 'Lower Bound';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) { return 'Rs ' + format(value); }
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function submitForecastSearch() {
+    const input = document.getElementById("forecast-search-input");
+    const stock = input.value.trim().toUpperCase();
+    if (!stock) {
+        alert("Please enter a stock ticker");
+        return;
+    }
+
+    const isValid = await validateStockTicker(stock);
+    if (!isValid) {
+        alert(`"${stock}" is not supported. Please choose a stock from the suggestions dropdown list.`);
+        return;
+    }
+    
+    // Remove active class from all rows in the portfolio table
+    const rows = document.querySelectorAll("#portfolio-table tr");
+    rows.forEach(r => r.classList.remove("table-active-row"));
+    
+    loadForecast(stock);
+}
+
+const POPULAR_STOCKS = [
+    "TCS", "INFY", "RELIANCE", "WIPRO", "HDFCBANK", 
+    "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "LT", 
+    "HINDUNILVR", "AXISBANK", "KOTAKBANK", "BAJFINANCE", "M&M", 
+    "TATASTEEL", "ADANIENT", "ASIANPAINT", "HCLTECH", "MARUTI", 
+    "SUNPHARMA", "ONGC", "TITAN", "ULTRACEMCO", "NTPC", 
+    "JSWSTEEL", "POWERGRID", "TATAELXSI", "COALINDIA", "TATACOMM"
+];
+
+const VALID_STOCKS = new Set(POPULAR_STOCKS);
+
+async function validateStockTicker(ticker) {
+    const symbol = ticker.trim().toUpperCase();
+    if (!symbol) return false;
+    if (VALID_STOCKS.has(symbol)) return true;
+    
+    try {
+        const res = await fetch(`/api/portfolio/search/?q=${symbol}`, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const exactMatch = data.find(item => item.symbol === symbol);
+            if (exactMatch) {
+                VALID_STOCKS.add(symbol);
+                return true;
+            }
+        }
+    } catch (e) {
+        console.error("Validation error:", e);
+    }
+    return false;
+}
+
+function setupAutocomplete(inputId, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const suggestions = document.getElementById(suggestionsId);
+    if (!input || !suggestions) return;
+    
+    let activeIndex = -1;
+    let currentMatches = [];
+    let debounceTimer;
+    
+    function renderSuggestions() {
+        suggestions.innerHTML = "";
+        if (currentMatches.length === 0) {
+            suggestions.classList.add("d-none");
+            return;
+        }
+        
+        suggestions.classList.remove("d-none");
+        currentMatches.forEach((match, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-group-item list-group-item-action py-2 text-start small suggestion-item";
+            btn.innerText = match;
+            btn.dataset.index = index;
+            if (index === activeIndex) {
+                btn.classList.add("active");
+            }
+            
+            btn.addEventListener("mousedown", (e) => {
+                e.preventDefault(); // prevent blur before click
+                selectMatch(match);
+            });
+            suggestions.appendChild(btn);
+        });
+    }
+    
+    async function showSuggestions() {
+        const val = input.value.trim().toUpperCase();
+        suggestions.innerHTML = "";
+        activeIndex = -1;
+        
+        if (!val) {
+            currentMatches = POPULAR_STOCKS;
+            renderSuggestions();
+            return;
+        }
+        
+        // Show matching popular stocks instantly
+        const localMatches = POPULAR_STOCKS.filter(stock => stock.startsWith(val));
+        currentMatches = localMatches;
+        renderSuggestions();
+        
+        // Fetch from API
+        try {
+            const res = await fetch(`/api/portfolio/search/?q=${val}`, {
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
+            });
+            if (res.ok) {
+                const apiResults = await res.json();
+                
+                // Add all to VALID_STOCKS
+                apiResults.forEach(item => VALID_STOCKS.add(item.symbol));
+                
+                // Merge local and API results
+                const mergedSymbols = [...localMatches];
+                apiResults.forEach(item => {
+                    if (!mergedSymbols.includes(item.symbol)) {
+                        mergedSymbols.push(item.symbol);
+                    }
+                });
+                
+                currentMatches = mergedSymbols;
+                // Only render if the input value hasn't changed since the request started
+                if (input.value.trim().toUpperCase() === val) {
+                    renderSuggestions();
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching suggestions:", e);
+        }
+    }
+    
+    function selectMatch(match) {
+        input.value = match;
+        suggestions.classList.add("d-none");
+        currentMatches = [];
+        activeIndex = -1;
+        
+        // Automatically run forecast if it is the forecast input
+        if (inputId === "forecast-search-input") {
+            submitForecastSearch();
+        }
+    }
+    
+    function highlightSuggestion(index) {
+        const items = suggestions.querySelectorAll(".suggestion-item");
+        items.forEach((item, idx) => {
+            if (idx === index) {
+                item.classList.add("active");
+                item.scrollIntoView({ block: "nearest" });
+            } else {
+                item.classList.remove("active");
+            }
+        });
+    }
+    
+    input.addEventListener("input", () => {
+        const val = input.value.trim().toUpperCase();
+        if (!val) {
+            clearTimeout(debounceTimer);
+            currentMatches = POPULAR_STOCKS;
+            renderSuggestions();
+            return;
+        }
+        
+        // Show matching popular stocks instantly
+        const localMatches = POPULAR_STOCKS.filter(stock => stock.startsWith(val));
+        currentMatches = localMatches;
+        renderSuggestions();
+        
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            showSuggestions();
+        }, 250);
+    });
+    
+    input.addEventListener("focus", () => {
+        clearTimeout(debounceTimer);
+        showSuggestions();
+    });
+    input.addEventListener("click", () => {
+        clearTimeout(debounceTimer);
+        showSuggestions();
+    });
+    
+    input.addEventListener("keydown", (e) => {
+        if (suggestions.classList.contains("d-none")) {
+            return;
+        }
+        
+        const items = suggestions.querySelectorAll(".suggestion-item");
+        if (items.length === 0) return;
+        
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIndex = (activeIndex + 1) % items.length;
+            highlightSuggestion(activeIndex);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIndex = (activeIndex - 1 + items.length) % items.length;
+            highlightSuggestion(activeIndex);
+        } else if (e.key === "Enter") {
+            if (activeIndex >= 0 && activeIndex < currentMatches.length) {
+                e.preventDefault();
+                selectMatch(currentMatches[activeIndex]);
+            } else if (currentMatches.length > 0) {
+                e.preventDefault();
+                selectMatch(currentMatches[0]);
+            }
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            suggestions.classList.add("d-none");
+            activeIndex = -1;
+        }
+    });
+    
+    input.addEventListener("blur", () => {
+        setTimeout(async () => {
+            const val = input.value.trim().toUpperCase();
+            if (val) {
+                const isValid = await validateStockTicker(val);
+                if (isValid) {
+                    input.value = val;
+                } else {
+                    input.value = "";
+                }
+            }
+            suggestions.classList.add("d-none");
+            activeIndex = -1;
+        }, 250);
+    });
+}
+
 // 🔥 Initial Load
-loadData();
+async function init() {
+    await loadData();
+    await loadTransactions();
+    setupAutocomplete("stock_name", "stock-name-suggestions");
+    setupAutocomplete("forecast-search-input", "forecast-search-suggestions");
+}
+
+init();
 
 </script>
+
+<style>
+    .table-active-row {
+        background-color: rgba(79, 70, 229, 0.07) !important;
+        border-left: 4px solid #4f46e5 !important;
+        font-weight: 500;
+    }
+    .suggestion-item.active {
+        background-color: #4f46e5 !important;
+        color: white !important;
+    }
+</style>
 
 {% endblock %}

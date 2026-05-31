@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.views.decorators.csrf import csrf_exempt
 from .models import Transaction
 from .serializers import TransactionSerializer
@@ -42,8 +42,18 @@ def get_transactions(request):
     # 🔹 Filter by date range
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    if start_date and end_date:
-        transactions = transactions.filter(date__range=[start_date, end_date])
+    if start_date:
+        transactions = transactions.filter(date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(date__lte=end_date)
+
+    # 🔹 Search by Description or Category Name
+    search_query = request.GET.get('search')
+    if search_query:
+        transactions = transactions.filter(
+            Q(description__icontains=search_query) |
+            Q(category__name__icontains=search_query)
+        )
 
     # 🔹 Sorting
     sort_by = request.GET.get('sort_by', 'date')   # default = date

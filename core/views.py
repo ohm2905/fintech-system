@@ -12,3 +12,6 @@ def transactions_page(request):
 def signup_page(request):
     return render(request, 'signup.html')
 
+def analytics_page(request):
+    return render(request, 'analytics.html')
+

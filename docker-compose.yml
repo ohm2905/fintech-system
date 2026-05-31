@@ -18,6 +18,10 @@ services:
     build: .
     container_name: fintech_app
     command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/fintech_db"
+      SECRET_KEY: "django-insecure-d=bimep!q11hse5=d=et-82m4zm^_86!1jf7kvyd9gm@5kv_s)"
+      DEBUG: "True"
     volumes:
       - .:/app
     ports:

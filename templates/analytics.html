@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Financial Analytics & Budgets</h2>
+    <div>
+        <label for="month-filter" class="form-label d-inline-block me-2 mb-0">Select Month:</label>
+        <input type="month" id="month-filter" class="form-control d-inline-block w-auto" onchange="onMonthChange()">
+    </div>
+</div>
+
+<!-- 📊 KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm border-0 bg-light">
+            <h6 class="text-muted">Current Month Savings Rate</h6>
+            <h3 id="current-savings-rate">0.00%</h3>
+            <p class="mb-0 text-secondary" id="current-savings-label">Income: Rs 0 | Expenses: Rs 0</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm border-0 bg-light">
+            <h6 class="text-muted">Total Budget Utilization</h6>
+            <h3 id="budget-utilization">0.00%</h3>
+            <div class="progress mt-2" style="height: 10px;">
+                <div id="total-budget-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- ➕ Budget Form -->
+    <div class="col-md-4 mb-4">
+        <div class="card p-3 shadow-sm border-0">
+            <h5>Set Category Budget</h5>
+            <hr>
+            <form id="budget-form" onsubmit="saveBudget(event)">
+                <div class="mb-3">
+                    <label for="budget-category" class="form-label">Category</label>
+                    <select id="budget-category" class="form-select" required>
+                        <option value="">Choose category...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="budget-amount" class="form-label">Limit Amount</label>
+                    <input type="number" id="budget-amount" class="form-control" placeholder="E.g., 500" min="1" step="any" required>
+                </div>
+                <div class="mb-3">
+                    <label for="budget-month" class="form-label">Month</label>
+                    <input type="month" id="budget-month" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Save Budget</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 📄 Budget Status Table -->
+    <div class="col-md-8 mb-4">
+        <div class="card p-3 shadow-sm border-0">
+            <h5>Active Budgets & Spending</h5>
+            <hr>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Budget Limit</th>
+                            <th>Actual Spent</th>
+                            <th>Utilization</th>
+                            <th>Projected Month-End</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="budget-table-body">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No budgets set for this month.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📈 Charts Row -->
+<div class="row">
+    <!-- Savings Rate Trend -->
+    <div class="col-md-6 mb-4">
+        <div class="card p-3 shadow-sm border-0">
+            <h5>Savings Rate Trend (Last 6 Months)</h5>
+            <hr>
+            <div style="height: 300px; position: relative;">
+                <canvas id="savingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Trend -->
+    <div class="col-md-6 mb-4">
+        <div class="card p-3 shadow-sm border-0">
+            <h5>Category Spending Trend (Last 6 Months)</h5>
+            <hr>
+            <div style="height: 300px; position: relative;">
+                <canvas id="spendingTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("access");
+
+if (!token) {
+    window.location.href = "/login/";
+}
+
+// Set current month as default value for filters
+const today = new Date();
+const currentMonthStr = today.toISOString().substring(0, 7); // "YYYY-MM"
+document.getElementById("month-filter").value = currentMonthStr;
+document.getElementById("budget-month").value = currentMonthStr;
+
+// Fetch with Auth header helper
+async function fetchAuth(url, options = {}) {
+    options.headers = {
+        ...options.headers,
+        "Authorization": "Bearer " + token
+    };
+
+    const res = await fetch(url, options);
+
+    if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = "/login/";
+        return null;
+    }
+
+    return res;
+}
+
+// Load categories to set budget select dropdown
+async function loadCategories() {
+    const res = await fetchAuth("/api/transactions/categories/");
+    if (!res) return;
+    const categories = await res.json();
+    
+    const select = document.getElementById("budget-category");
+    select.innerHTML = '<option value="">Choose category...</option>';
+    
+    // Filter only expense categories
+    categories.forEach(cat => {
+        if (cat.type === 'expense') {
+            const option = document.createElement("option");
+            option.value = cat.id;
+            option.textContent = cat.name;
+            select.appendChild(option);
+        }
+    });
+}
+
+// Load Budget status table
+async function loadBudgetStatus(monthStr) {
+    const res = await fetchAuth(`/api/analytics/budget-status/?month=${monthStr}`);
+    if (!res) return;
+    const data = await res.json();
+
+    const tbody = document.getElementById("budget-table-body");
+    tbody.innerHTML = "";
+
+    let totalBudget = 0;
+    let totalSpent = 0;
+
+    if (!data.budgets || data.budgets.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No budgets set for ${monthStr}.</td></tr>`;
+        document.getElementById("budget-utilization").innerText = "0.00%";
+        document.getElementById("total-budget-progress").style.width = "0%";
+        return;
+    }
+
+    data.budgets.forEach(b => {
+        totalBudget += b.budget_amount;
+        totalSpent += b.actual_spent;
+
+        let badgeClass = "bg-success";
+        if (b.status === "exceeded") badgeClass = "bg-danger";
+        else if (b.status === "near_limit") badgeClass = "bg-warning text-dark";
+
+        let projectedHtml = "";
+        if (b.projected_spent > 0) {
+            if (b.is_projected_to_exceed) {
+                projectedHtml = `
+                    <span class="text-danger fw-bold">Rs ${b.projected_spent.toFixed(2)}</span>
+                    <div class="text-danger small" style="font-size: 10px; font-weight: 500;">⚠️ Exceeds by Rs ${b.projected_overspend.toFixed(2)}</div>
+                `;
+            } else {
+                projectedHtml = `
+                    <span class="text-success fw-bold">Rs ${b.projected_spent.toFixed(2)}</span>
+                    <div class="text-success small" style="font-size: 10px; font-weight: 500;">On track</div>
+                `;
+            }
+        } else {
+            projectedHtml = `<span class="text-muted">-</span>`;
+        }
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${b.category_name}</strong></td>
+            <td>Rs ${b.budget_amount.toFixed(2)}</td>
+            <td>Rs ${b.actual_spent.toFixed(2)}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <span class="me-2 small">${b.percent_spent}%</span>
+                    <div class="progress flex-grow-1" style="height: 6px; min-width: 80px;">
+                        <div class="progress-bar ${b.percent_spent > 100 ? 'bg-danger' : b.percent_spent >= 90 ? 'bg-warning' : 'bg-success'}" 
+                             role="progressbar" style="width: ${Math.min(b.percent_spent, 100)}%"></div>
+                    </div>
+                </div>
+            </td>
+            <td>${projectedHtml}</td>
+            <td><span class="badge ${badgeClass}">${b.status.replace('_', ' ')}</span></td>
+            <td>
+                <button onclick="deleteBudget(${b.id})" class="btn btn-outline-danger btn-sm">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Update global budget utilization progress
+    const overallUtil = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+    document.getElementById("budget-utilization").innerText = `${overallUtil.toFixed(2)}% (Rs ${totalSpent.toFixed(2)} / Rs ${totalBudget.toFixed(2)})`;
+    const overallProgressBar = document.getElementById("total-budget-progress");
+    overallProgressBar.style.width = `${Math.min(overallUtil, 100)}%`;
+    overallProgressBar.className = `progress-bar ${overallUtil > 100 ? 'bg-danger' : overallUtil >= 90 ? 'bg-warning' : 'bg-success'}`;
+}
+
+// Load Savings Rate metrics & render chart
+let savingsChart = null;
+async function loadSavingsRates(monthStr) {
+    const res = await fetchAuth(`/api/analytics/savings-rate/?month=${monthStr}`);
+    if (!res) return;
+    const data = await res.json();
+
+    // Populate Current Month Savings Rate KPI (last item in the returned array represents current month)
+    if (data && data.length > 0) {
+        const currentMonth = data[data.length - 1];
+        const rateEl = document.getElementById("current-savings-rate");
+        rateEl.innerText = `${currentMonth.savings_rate_percent.toFixed(2)}%`;
+        rateEl.style.color = currentMonth.savings_rate_percent >= 0 ? "green" : "red";
+        document.getElementById("current-savings-label").innerText = `Income: Rs ${currentMonth.total_income.toFixed(2)} | Expenses: Rs ${currentMonth.total_expense.toFixed(2)}`;
+    }
+
+    const labels = data.map(item => item.month);
+    const rates = data.map(item => item.savings_rate_percent);
+
+    if (savingsChart) savingsChart.destroy();
+
+    const ctx = document.getElementById("savingsChart").getContext("2d");
+    savingsChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Savings Rate (%)",
+                data: rates,
+                borderColor: "#0d6efd",
+                backgroundColor: "rgba(13, 110, 253, 0.1)",
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return value + "%"; }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load Spending Trends & render stacked bar chart
+let spendingTrendChart = null;
+async function loadSpendingTrends(monthStr) {
+    const res = await fetchAuth(`/api/analytics/spending-trend/?month=${monthStr}`);
+    if (!res) return;
+    const data = await res.json();
+
+    const months = data.map(item => item.month);
+    
+    // Extract unique categories across all months
+    const categoryMap = {};
+    data.forEach(m => {
+        m.breakdown.forEach(item => {
+            categoryMap[item.category_name] = true;
+        });
+    });
+    const uniqueCategories = Object.keys(categoryMap);
+
+    // Build dataset per category
+    const datasets = uniqueCategories.map((catName, index) => {
+        const dataPoints = data.map(m => {
+            const match = m.breakdown.find(item => item.category_name === catName);
+            return match ? match.amount : 0;
+        });
+
+        // Colors palette
+        const colors = [
+            "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", 
+            "#FF9F40", "#E7E9ED", "#76D7C4", "#F7DC6F", "#C39BD3"
+        ];
+        const color = colors[index % colors.length];
+
+        return {
+            label: catName,
+            data: dataPoints,
+            backgroundColor: color
+        };
+    });
+
+    if (spendingTrendChart) spendingTrendChart.destroy();
+
+    const ctx = document.getElementById("spendingTrendChart").getContext("2d");
+    spendingTrendChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: months,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true },
+                y: { 
+                    stacked: true, 
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return 'Rs ' + value; }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Save or Update Budget
+async function saveBudget(event) {
+    event.preventDefault();
+    const category = document.getElementById("budget-category").value;
+    const amount = document.getElementById("budget-amount").value;
+    const month = document.getElementById("budget-month").value;
+
+    const res = await fetchAuth("/api/analytics/budget/add/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, amount, month })
+    });
+
+    if (res && res.ok) {
+        alert("Budget saved successfully.");
+        // Refresh status for the current view month filter
+        const currentFilterMonth = document.getElementById("month-filter").value;
+        loadBudgetStatus(currentFilterMonth);
+    } else {
+        alert("Error saving budget.");
+    }
+}
+
+// Delete Budget
+async function deleteBudget(id) {
+    if (!confirm("Are you sure you want to delete this budget?")) return;
+
+    const res = await fetchAuth(`/api/analytics/budget/delete/${id}/`, {
+        method: "DELETE"
+    });
+
+    if (res && res.ok) {
+        alert("Budget deleted.");
+        const currentFilterMonth = document.getElementById("month-filter").value;
+        loadBudgetStatus(currentFilterMonth);
+    } else {
+        alert("Error deleting budget.");
+    }
+}
+
+// Month change handler
+function onMonthChange() {
+    const selectedMonth = document.getElementById("month-filter").value;
+    loadBudgetStatus(selectedMonth);
+    loadSavingsRates(selectedMonth);
+    loadSpendingTrends(selectedMonth);
+}
+
+// Initial Loading
+async function init() {
+    await loadCategories();
+    const defaultMonth = document.getElementById("month-filter").value;
+    await loadBudgetStatus(defaultMonth);
+    await loadSavingsRates(defaultMonth);
+    await loadSpendingTrends(defaultMonth);
+}
+
+init();
+</script>
+
+{% endblock %}

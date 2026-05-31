@@ -2,182 +2,231 @@
 
 {% block content %}
 
-<h2>Transactions</h2>
-
-<!-- Add Transaction -->
-<div class="card p-3 shadow mt-3">
-    <div class="row">
-
-        <div class="col-md-2">
-            <input type="number" id="amount" class="form-control" placeholder="Amount">
+<div class="row">
+    <!-- Left Column: Transactions List & Analytics -->
+    <div class="col-lg-8">
+        <!-- 🔹 Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm border-0 bg-light">
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">Total Income</h6>
+                    <h3 class="text-success mb-0 fw-bold" id="total_income">Rs 0.00</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm border-0 bg-light">
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">Total Expense</h6>
+                    <h3 class="text-danger mb-0 fw-bold" id="total_expense">Rs 0.00</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm border-0 bg-light">
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">Net Balance</h6>
+                    <h3 class="mb-0 fw-bold" id="balance">Rs 0.00</h3>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-2">
-            <select id="type" class="form-control" onchange="filterCategories()">
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-            </select>
+        <!-- 📄 Transactions Table & Filters -->
+        <div class="card shadow-sm border-0 p-3 mb-4">
+            <h5 class="fw-bold mb-3 text-dark">Transaction Ledger</h5>
+
+            <!-- Filters & Search Controls -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <input type="text" id="search-tx" class="form-control form-control-sm" placeholder="Search desc/category..." oninput="applyFilters()">
+                </div>
+                <div class="col-md-2">
+                    <select id="filter-type" class="form-select form-select-sm" onchange="applyFilters()">
+                        <option value="">All Types</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="filter-category" class="form-select form-select-sm" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" id="start_date" class="form-control form-control-sm" onchange="applyFilters()" placeholder="From Date">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" id="end_date" class="form-control form-control-sm" onchange="applyFilters()" placeholder="To Date">
+                </div>
+                <div class="col-md-1">
+                    <button onclick="resetFilters()" class="btn btn-sm btn-secondary w-100">Reset</button>
+                </div>
+            </div>
+
+            <!-- Sorting & Limits Row -->
+            <div class="row g-2 mb-3 border-top pt-2">
+                <div class="col-md-4 d-flex align-items-center">
+                    <span class="text-muted small me-2 text-nowrap">Sort by:</span>
+                    <select id="sort-by" class="form-select form-select-sm me-2" onchange="applyFilters()">
+                        <option value="date">Date</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                    <select id="sort-order" class="form-select form-select-sm" onchange="applyFilters()">
+                        <option value="desc">DESC</option>
+                        <option value="asc">ASC</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-center offset-md-4 justify-content-end">
+                    <span class="text-muted small me-2 text-nowrap">Show entries:</span>
+                    <select id="limit" class="form-select form-select-sm w-auto" onchange="applyFilters()">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" style="font-size: 14px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No transactions found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-2">
+                <span id="page-number" class="text-muted small">Showing 0 of 0 entries</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item">
+                            <button onclick="prevPage()" class="page-link">Previous</button>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link" id="current-page-display">1</span>
+                        </li>
+                        <li class="page-item">
+                            <button onclick="nextPage()" class="page-link">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
 
-        <div class="col-md-2">
-            <select id="category" class="form-control">
-                <option value="">Select Category</option>
-            </select>
+        <!-- 📊 Charts Card Row -->
+        <div class="row g-3 mb-5">
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm border-0" style="min-height: 320px;">
+                    <h6 class="fw-bold mb-3 text-dark">Expense Breakdown</h6>
+                    <div class="position-relative d-flex justify-content-center align-items-center" style="height: 220px; width: 100%;">
+                        <canvas id="categoryChart"></canvas>
+                        <!-- Central Total Expense display -->
+                        <div id="chart-center-label-expense" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                            <div style="font-size: 10px; color: #6c757d; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Total Expense</div>
+                            <div id="center-expense-value" style="font-size: 16px; font-weight: bold; color: #212529;">Rs 0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm border-0" style="min-height: 320px;">
+                    <h6 class="fw-bold mb-3 text-dark">Income vs Expense</h6>
+                    <div style="height: 220px;">
+                        <canvas id="summaryChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="col-md-2">
-            <input type="date" id="date" class="form-control">
-        </div>
-
-        <div class="col-md-2">
-            <button onclick="addTransaction()" class="btn btn-success w-100">
+    <!-- Right Column: Add/Edit Forms & Category Configuration -->
+    <div class="col-lg-4">
+        <!-- ➕ Add / Edit Transaction Form -->
+        <div class="card shadow-sm border-success border mb-4" id="form-card">
+            <div class="card-header bg-success text-white fw-bold py-2" id="form-card-header" style="font-size: 15px;">
                 Add Transaction
-            </button>
+            </div>
+            <div class="card-body p-3">
+                <div class="mb-3">
+                    <label for="amount" class="form-label small fw-bold">Amount</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0">Rs</span>
+                        <input type="number" id="amount" class="form-control form-control-sm border-start-0" placeholder="0.00" min="0.01" step="any">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="type" class="form-label small fw-bold">Type</label>
+                    <select id="type" class="form-select form-select-sm" onchange="filterCategories()">
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label small fw-bold">Category</label>
+                    <select id="category" class="form-select form-select-sm">
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="date" class="form-label small fw-bold">Date</label>
+                    <input type="date" id="date" class="form-control form-control-sm">
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label small fw-bold">Description</label>
+                    <textarea id="description" class="form-control form-control-sm" rows="2" placeholder="Describe this transaction (optional)"></textarea>
+                </div>
+                <div class="d-flex g-2">
+                    <button onclick="addTransaction()" id="add-btn" class="btn btn-sm btn-success w-100 me-2">
+                        Add Transaction
+                    </button>
+                    <button onclick="cancelEdit()" id="cancel-edit-btn" class="btn btn-sm btn-outline-secondary" style="display: none;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
         </div>
 
-    </div>
-</div>
+        <!-- ⚙️ Category Management -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white fw-bold py-2" style="font-size: 15px;">
+                Category Management
+            </div>
+            <div class="card-body p-3">
+                <!-- Add Category -->
+                <h6 class="fw-bold text-dark border-bottom pb-1 small">Add New Category</h6>
+                <div class="mb-3">
+                    <input type="text" id="new_category_name" class="form-control form-control-sm mb-2" placeholder="Category Name (e.g. Travel)">
+                    <select id="new_category_type" class="form-select form-select-sm mb-2">
+                        <option value="expense">Expense Category</option>
+                        <option value="income">Income Category</option>
+                    </select>
+                    <button onclick="addCategory()" class="btn btn-sm btn-primary w-100">
+                        Create Category
+                    </button>
+                </div>
 
-<!-- Add Category -->
-<h4 class="mt-4">Add New Category</h4>
-
-<div class="card p-3 shadow mt-2">
-    <div class="row">
-
-        <div class="col-md-4">
-            <input type="text" id="new_category_name" class="form-control" placeholder="Category Name">
-        </div>
-
-        <div class="col-md-4">
-            <select id="new_category_type" class="form-control">
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <button onclick="addCategory()" class="btn btn-primary w-100">
-                Add Category
-            </button>
-        </div>
-
-    </div>
-</div>
-
-<!-- Delete Category -->
-<h5 class="mt-4">Delete Category</h5>
-
-<select id="delete_category" class="form-control mb-2">
-    <option value="" disabled selected>Select Category to Delete</option>
-</select>
-
-<button onclick="deleteCategory()" class="btn btn-danger">
-    Delete Category
-</button>
-
-<div class="row mt-4">
-
-    <div class="col-md-4">
-        <div class="card p-3 shadow text-center">
-            <h6>Total Income</h6>
-            <h3 id="total_income">0</h3>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card p-3 shadow text-center">
-            <h6>Total Expense</h6>
-            <h3 id="total_expense">0</h3>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card p-3 shadow text-center">
-            <h6>Balance</h6>
-            <h3 id="balance">0</h3>
-        </div>
-    </div>
-
-</div>
-
-
-<!-- Filters -->
-<div class="card p-3 shadow mt-4">
-    <div class="row">
-
-        <div class="col-md-3">
-            <label>From Date</label>
-            <input type="date" id="start_date" class="form-control">
-        </div>
-
-        <div class="col-md-3">
-            <label>To Date</label>
-            <input type="date" id="end_date" class="form-control">
-        </div>
-
-        <div class="col-md-3">
-            <label>Show Entries</label>
-            <select id="limit" class="form-control">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="100">100</option>
-            </select>
-        </div>
-
-        <div class="col-md-3 d-flex align-items-end">
-            <button onclick="applyFilters()" class="btn btn-dark w-100">
-                Apply Filter
-            </button>
-        </div>
-
-    </div>
-</div>
-
-<!-- Table -->
-<table class="table table-bordered mt-4">
-    <thead class="table-dark">
-        <tr>
-            <th>Amount</th>
-            <th>Type</th>
-            <th>Category</th>
-            <th>Date</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="transaction-table"></tbody>
-</table>
-<div class="d-flex justify-content-between mt-3">
-
-    <button onclick="prevPage()" class="btn btn-secondary">
-        Previous
-    </button>
-
-    <span id="page-number">Page 1</span>
-
-    <button onclick="nextPage()" class="btn btn-secondary">
-        Next
-    </button>
-
-</div>
-
-<!-- Charts -->
-<div class="row mt-5">
-
-    <div class="col-md-6">
-        <div class="card p-3 shadow">
-            <h5>Expense Breakdown</h5>
-            <canvas id="categoryChart"></canvas>
+                <!-- Delete Category -->
+                <h6 class="fw-bold text-danger border-bottom pb-1 pt-2 small">Delete Category</h6>
+                <div class="mb-3">
+                    <select id="delete_category" class="form-select form-select-sm mb-2">
+                        <option value="" disabled selected>Select Category to Delete</option>
+                    </select>
+                    <button onclick="deleteCategory()" class="btn btn-sm btn-outline-danger w-100">
+                        Delete Selected Category
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="col-md-6">
-        <div class="card p-3 shadow">
-            <h5>Income vs Expense</h5>
-            <canvas id="summaryChart"></canvas>
-        </div>
-    </div>
-
 </div>
 
 <script>
@@ -186,18 +235,17 @@ let editingId = null;
 
 const token = localStorage.getItem("access");
 let currentPage = 1;
-let totalPages = 1;   // 🔥 NEW
+let totalPages = 1;
 if (!token) window.location.href = "/login/";
 
 let allCategories = [];
 let categoryChartInstance = null;
 let summaryChartInstance = null;
 
-// default date
-document.getElementById("date").value =
-    new Date().toISOString().split("T")[0];
+// Default date set to today
+document.getElementById("date").value = new Date().toISOString().split("T")[0];
 
-// auth helper
+// Safe API fetcher helper
 async function fetchWithAuth(url, options = {}) {
     options.headers = {
         ...options.headers,
@@ -215,85 +263,106 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
-// 🔹 Load Transactions
-//console.log("Edit clicked", id);
-async function loadTransactions() {
+// Formatting helper
+function format(num) {
+    return parseFloat(num).toFixed(2);
+}
 
+// 🔹 Load Transactions
+async function loadTransactions() {
     const startDate = document.getElementById("start_date").value;
     const endDate = document.getElementById("end_date").value;
     const limit = document.getElementById("limit").value;
+    const search = document.getElementById("search-tx").value;
+    const type = document.getElementById("filter-type").value;
+    const category = document.getElementById("filter-category").value;
+    const sortBy = document.getElementById("sort-by").value;
+    const order = document.getElementById("sort-order").value;
 
-    let url = `/api/transactions/?page=${currentPage}&limit=${limit}`;
+    let url = `/api/transactions/?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(search)}&type=${type}&category=${category}&sort_by=${sortBy}&order=${order}`;
 
-    if (startDate && endDate) {
-        url += `&start_date=${startDate}&end_date=${endDate}`;
-    }
+    if (startDate) url += `&start_date=${startDate}`;
+    if (endDate) url += `&end_date=${endDate}`;
 
     const response = await fetchWithAuth(url);
     if (!response) return;
 
     const res = await response.json();
-    totalPages = Math.ceil(res.total / res.limit);
+    totalPages = Math.ceil(res.total / res.limit) || 1;
 
     const table = document.getElementById("transaction-table");
     table.innerHTML = "";
 
     if (!res.data || res.data.length === 0) {
-        table.innerHTML = `<tr><td colspan="5">No data</td></tr>`;
+        table.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No transactions found.</td></tr>`;
+        document.getElementById("page-number").innerText = "Showing 0 of 0 entries";
+        document.getElementById("current-page-display").innerText = currentPage;
+        document.querySelector("button[onclick='prevPage()']").disabled = true;
+        document.querySelector("button[onclick='nextPage()']").disabled = true;
         return;
     }
 
     res.data.forEach(tx => {
+        const badgeClass = tx.type === 'income' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle';
+        const typeLabel = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+        const descriptionText = tx.description || '<span class="text-muted small">No description</span>';
+        
         table.innerHTML += `
             <tr>
-                <td>${tx.amount}</td>
-                <td>${tx.type}</td>
+                <td><strong>Rs ${format(tx.amount)}</strong></td>
+                <td><span class="badge ${badgeClass} px-2 py-1 small">${typeLabel}</span></td>
                 <td>${tx.category_name}</td>
                 <td>${tx.date}</td>
-                <td>
-                    <button onclick='startEdit(${tx.id}, ${tx.amount}, "${tx.type}", ${tx.category}, "${tx.date}")'
-                        class="btn btn-warning btn-sm">
+                <td class="text-break">${descriptionText}</td>
+                <td class="text-end">
+                    <button onclick='startEdit(${tx.id}, ${tx.amount}, "${tx.type}", ${tx.category}, "${tx.date}", \`${tx.description || ""}\`)'
+                        class="btn btn-outline-warning btn-sm me-1">
                         Edit
                     </button>
-
                     <button onclick="deleteTransaction(${tx.id})"
-                        class="btn btn-danger btn-sm">
+                        class="btn btn-outline-danger btn-sm">
                         Delete
                     </button>
                 </td>
             </tr>
         `;
     });
-    document.querySelector("button[onclick='prevPage()']").disabled = currentPage === 1;
 
+    const startRange = (currentPage - 1) * res.limit + 1;
+    const endRange = Math.min(currentPage * res.limit, res.total);
+    document.getElementById("page-number").innerText = `Showing ${startRange}-${endRange} of ${res.total} entries`;
+    document.getElementById("current-page-display").innerText = currentPage;
+
+    document.querySelector("button[onclick='prevPage()']").disabled = currentPage === 1;
     document.querySelector("button[onclick='nextPage()']").disabled = currentPage >= totalPages;
 }
 
 // 🔹 Load Categories
 async function loadCategories() {
-
     const response = await fetchWithAuth("/api/transactions/categories/");
+    if (!response) return;
     const data = await response.json();
 
     allCategories = data;
 
+    // Load category dropdown in Filter controls
+    const filterCatDropdown = document.getElementById("filter-category");
+    filterCatDropdown.innerHTML = '<option value="">All Categories</option>';
+    
+    // Load category delete dropdown
     const deleteDropdown = document.getElementById("delete_category");
-
-    deleteDropdown.innerHTML =
-        '<option value="" disabled selected>Select Category to Delete</option>';
+    deleteDropdown.innerHTML = '<option value="" disabled selected>Select Category to Delete</option>';
 
     data.forEach(cat => {
-        deleteDropdown.innerHTML += `
-            <option value="${cat.id}">${cat.name}</option>
-        `;
+        deleteDropdown.innerHTML += `<option value="${cat.id}">${cat.name} (${cat.type})</option>`;
+        filterCatDropdown.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
     });
 
     filterCategories();
 }
 
-// 🔹 Filter Categories
+// 🔹 Filter Form Categories based on selected transaction type
 function filterCategories() {
-
     const selectedType = document.getElementById("type").value;
     const dropdown = document.getElementById("category");
 
@@ -308,16 +377,16 @@ function filterCategories() {
     });
 }
 
-// 🔹 Add Transaction
+// 🔹 Add / Update Transaction
 async function addTransaction() {
-
     const amount = document.getElementById("amount").value;
     const type = document.getElementById("type").value;
     const category = document.getElementById("category").value;
     const date = document.getElementById("date").value;
+    const description = document.getElementById("description").value;
 
     if (!amount || !category || !date) {
-        alert("Fill all fields!");
+        alert("Fill all required fields!");
         return;
     }
 
@@ -332,27 +401,25 @@ async function addTransaction() {
     const response = await fetchWithAuth(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, type, category, date })
+        body: JSON.stringify({ amount, type, category, date, description })
     });
 
-    if (response.ok) {
-
+    if (response && response.ok) {
         alert(editingId ? "Transaction updated!" : "Transaction added!");
 
         document.getElementById("amount").value = "";
-        document.getElementById("category").value = "";
+        document.getElementById("description").value = "";
 
-        editingId = null;
-
-        document.querySelector("button.btn-success").innerText = "Add Transaction";
-
+        cancelEdit();
         refreshAll();
+    } else if (response) {
+        const err = await response.json();
+        alert(err.error || "Error adding transaction");
     }
 }
 
 // 🔹 Delete Transaction
 async function deleteTransaction(id) {
-
     if (!confirm("Delete this transaction?")) return;
 
     const response = await fetchWithAuth(`/api/transactions/delete/${id}/`, {
@@ -367,7 +434,6 @@ async function deleteTransaction(id) {
 
 // 🔹 Add Category
 async function addCategory() {
-
     const name = document.getElementById("new_category_name").value;
     const type = document.getElementById("new_category_type").value;
 
@@ -382,7 +448,7 @@ async function addCategory() {
         body: JSON.stringify({ name, type })
     });
 
-    if (response.ok) {
+    if (response && response.ok) {
         alert("Category added!");
         document.getElementById("new_category_name").value = "";
         refreshAll();
@@ -391,7 +457,6 @@ async function addCategory() {
 
 // 🔹 Delete Category
 async function deleteCategory() {
-
     const id = document.getElementById("delete_category").value;
 
     if (!id) {
@@ -399,7 +464,7 @@ async function deleteCategory() {
         return;
     }
 
-    if (!confirm("Delete this category?")) return;
+    if (!confirm("Delete this category? This will delete all transactions under it!")) return;
 
     const response = await fetchWithAuth(`/api/transactions/delete-category/${id}/`, {
         method: "DELETE"
@@ -411,58 +476,90 @@ async function deleteCategory() {
     }
 }
 
-// 🔥 Category Chart
+// 🔥 Expense Category breakdown Chart
 async function loadCategoryChart() {
-
     const startDate = document.getElementById("start_date").value;
     const endDate = document.getElementById("end_date").value;
 
     let url = "/api/transactions/category-breakdown/";
-
-    if (startDate && endDate) {
-        url += `?start_date=${startDate}&end_date=${endDate}`;
-    }
+    const params = [];
+    if (startDate) params.push(`start_date=${startDate}`);
+    if (endDate) params.push(`end_date=${endDate}`);
+    if (params.length) url += `?${params.join("&")}`;
 
     const response = await fetchWithAuth(url);  
     if (!response) return;
 
     const data = await response.json();
-
     const ctx = document.getElementById("categoryChart");
 
     if (categoryChartInstance) categoryChartInstance.destroy();
 
-    if (!data.length) return;
+    const totalExpense = data.reduce((sum, d) => sum + d.total, 0);
+    document.getElementById("center-expense-value").innerText = "Rs " + format(totalExpense);
+
+    if (!data.length) {
+        return;
+    }
+
+    const modernColors = ["#0ea5e9", "#f97316", "#8b5cf6", "#ec4899", "#10b981", "#ef4444", "#64748b"];
 
     categoryChartInstance = new Chart(ctx, {
-        type: "pie",
+        type: "doughnut",
         data: {
             labels: data.map(d => d.category),
-            datasets: [{ data: data.map(d => d.total) }]
+            datasets: [{
+                data: data.map(d => d.total),
+                backgroundColor: modernColors.slice(0, data.length).concat(
+                    Array(Math.max(0, data.length - modernColors.length)).fill("#cbd5e1")
+                ),
+                borderWidth: 2,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 10,
+                        usePointStyle: true,
+                        padding: 10,
+                        font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.raw;
+                            const pct = totalExpense > 0 ? ((val / totalExpense) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: Rs ${format(val)} (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '72%'
         }
     });
 }
 
-// 🔥 Summary Chart
+// 🔥 Summary Chart (Income vs Expense)
 async function loadSummaryChart() {
-
-    //const month = new Date().toISOString().slice(0, 7);
-
     const startDate = document.getElementById("start_date").value;
     const endDate = document.getElementById("end_date").value;
 
     let url = "/api/transactions/summary/overall/";
-
-    if (startDate && endDate) {
-        url += `?start_date=${startDate}&end_date=${endDate}`;
-    }
-
+    const params = [];
+    if (startDate) params.push(`start_date=${startDate}`);
+    if (endDate) params.push(`end_date=${endDate}`);
+    if (params.length) url += `?${params.join("&")}`;
 
     const response = await fetchWithAuth(url);
     if (!response) return;
 
     const data = await response.json();
-
     const ctx = document.getElementById("summaryChart");
 
     if (summaryChartInstance) summaryChartInstance.destroy();
@@ -472,14 +569,44 @@ async function loadSummaryChart() {
         data: {
             labels: ["Income", "Expense"],
             datasets: [{
-                data: [data.total_income, data.total_expense]
+                data: [data.total_income, data.total_expense],
+                backgroundColor: ['#10b981', '#ef4444'], // Green for income, red for expense
+                borderWidth: 0,
+                borderRadius: 4,
+                barThickness: 45
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ` Total: Rs ${format(context.raw)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rs ' + value;
+                        }
+                    }
+                }
+            }
         }
     });
 }
 
+// 🔹 Load overall summary metric cards
 async function loadSummaryCards() {
-
     const response = await fetchWithAuth("/api/transactions/summary/overall/");
     if (!response) return;
 
@@ -489,42 +616,78 @@ async function loadSummaryCards() {
     const expense = data.total_expense || 0;
     const balance = income - expense;
 
-    document.getElementById("total_income").innerText = income;
-    document.getElementById("total_expense").innerText = expense;
-    document.getElementById("balance").innerText = balance;
-
-    // optional color styling
+    document.getElementById("total_income").innerText = "Rs " + format(income);
+    document.getElementById("total_expense").innerText = "Rs " + format(expense);
+    
     const balanceEl = document.getElementById("balance");
-    balanceEl.style.color = balance >= 0 ? "green" : "red";
+    balanceEl.innerText = (balance >= 0 ? "+" : "") + "Rs " + format(balance);
+    balanceEl.style.color = balance >= 0 ? "#10b981" : "#ef4444";
 }
 
-
-
-function startEdit(id, amount, type, category, date) {
-
+// 🔹 Start editing cycle for a specific row
+function startEdit(id, amount, type, category, date, description) {
     editingId = id;
 
-    // fill form with existing data
     document.getElementById("amount").value = amount;
     document.getElementById("type").value = type;
+    document.getElementById("date").value = date;
+    document.getElementById("description").value = description || "";
 
     filterCategories();
 
+    // Small delay to allow category options to rebuild
     setTimeout(() => {
         document.getElementById("category").value = category;
     }, 100);
 
-    document.getElementById("date").value = date;
+    // Apply visual edit/warning theme changes to transaction form
+    const formCard = document.getElementById("form-card");
+    formCard.classList.remove("border-success");
+    formCard.classList.add("border-warning");
+    
+    const formHeader = document.getElementById("form-card-header");
+    formHeader.classList.remove("bg-success", "text-white");
+    formHeader.classList.add("bg-warning", "text-dark");
+    formHeader.innerText = "Edit Transaction";
 
-    // change button text
-    document.querySelector("button.btn-success").innerText = "Update Transaction";
+    const addBtn = document.getElementById("add-btn");
+    addBtn.classList.remove("btn-success");
+    addBtn.classList.add("btn-warning");
+    addBtn.innerText = "Update Transaction";
+
+    document.getElementById("cancel-edit-btn").style.display = "inline-block";
 }
+
+// 🔹 Cancel editing and restore form to defaults
+function cancelEdit() {
+    editingId = null;
+    
+    document.getElementById("amount").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("date").value = new Date().toISOString().split("T")[0];
+    
+    const formCard = document.getElementById("form-card");
+    formCard.classList.remove("border-warning");
+    formCard.classList.add("border-success");
+    
+    const formHeader = document.getElementById("form-card-header");
+    formHeader.classList.remove("bg-warning", "text-dark");
+    formHeader.classList.add("bg-success", "text-white");
+    formHeader.innerText = "Add Transaction";
+
+    const addBtn = document.getElementById("add-btn");
+    addBtn.classList.remove("btn-warning");
+    addBtn.classList.add("btn-success");
+    addBtn.innerText = "Add Transaction";
+
+    document.getElementById("cancel-edit-btn").style.display = "none";
+}
+
+// 🔹 Pagination control buttons handlers
 function nextPage() {
     if (currentPage < totalPages) {
         currentPage++;
         loadTransactions();
-        document.getElementById("page-number").innerText =
-    `Page ${currentPage} of ${totalPages}`; 
     }
 }
 
@@ -532,25 +695,37 @@ function prevPage() {
     if (currentPage > 1) {
         currentPage--;
         loadTransactions();
-        document.getElementById("page-number").innerText =
-        `Page ${currentPage} of ${totalPages}`;
     }
 }
+
 function applyFilters() {
     currentPage = 1;
-    refreshAll();   // 🔥 refresh everything (table + charts + cards)
+    refreshAll();
 }
 
-// 🔥 Master Refresh
+function resetFilters() {
+    document.getElementById("search-tx").value = "";
+    document.getElementById("start_date").value = "";
+    document.getElementById("end_date").value = "";
+    document.getElementById("filter-type").value = "";
+    document.getElementById("filter-category").value = "";
+    document.getElementById("sort-by").value = "date";
+    document.getElementById("sort-order").value = "desc";
+    document.getElementById("limit").value = "5";
+    currentPage = 1;
+    refreshAll();
+}
+
+// 🔹 Master Refresh
 function refreshAll() {
     loadTransactions();
     loadCategories();
     loadCategoryChart();
     loadSummaryChart();
-    loadSummaryCards(); // 🔥 ADD THIS
+    loadSummaryCards();
 }
 
-// 🔥 Initial Load
+// 🔥 Trigger Initial Load on script parsing
 refreshAll();
 
 </script>

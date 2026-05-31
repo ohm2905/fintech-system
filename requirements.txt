@@ -3,7 +3,7 @@ beautifulsoup4==4.14.3
 certifi==2026.4.22
 cffi==2.0.0
 charset-normalizer==3.4.7
-curl_cffi==0.13.0
+curl_cffi>=0.15.0
 Django==4.2.30
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
@@ -14,7 +14,7 @@ numpy==2.0.2
 pandas==2.3.3
 peewee==4.0.5
 platformdirs==4.4.0
-protobuf==6.33.6
+protobuf>=3.20.2,<6.0.0dev
 psycopg2-binary==2.9.12
 pycparser==2.23
 PyJWT==2.12.1
@@ -28,4 +28,6 @@ typing_extensions==4.15.0
 tzdata==2026.2
 urllib3==2.6.3
 websockets==15.0.1
-yfinance==1.2.0
+yfinance>=1.4.1
+django-environ==0.11.2
+google-generativeai==0.8.3

@@ -17,15 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
-from .views import dashboard, login_page, transactions_page, signup_page
+from .views import dashboard, login_page, transactions_page, signup_page, analytics_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/transactions/', include('transactions.urls')),
     path('api/portfolio/', include('portfolio.urls')),
+    path('api/analytics/', include('analytics.urls')),
     path('', dashboard),
     path('login/', login_page),
     path('signup/', signup_page),
     path('transactions/', transactions_page),
+    path('analytics/', analytics_page),
 ]

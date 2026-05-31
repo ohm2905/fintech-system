@@ -1,0 +1,78 @@
+name: Django CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: fintech_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-style: '3.10'
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Django Tests
+      env:
+        DATABASE_URL: "postgres://postgres:postgres@localhost:5432/fintech_db"
+        SECRET_KEY: "django-insecure-test-key-for-github-actions-environment"
+        DEBUG: "True"
+      run: |
+        python manage.py test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Deploy to AWS EC2 via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: ${{ secrets.EC2_PORT || 22 }}
+        script: |
+          # Navigate to project directory
+          cd ${{ secrets.PROJECT_DIR }}
+          
+          # Pull latest changes from main branch
+          git pull origin main
+          
+          # Rebuild and restart the Docker containers
+          if command -v docker-compose &> /dev/null; then
+            docker-compose down
+            docker-compose up -d --build
+          else
+            docker compose down
+            docker compose up -d --build
+          fi
