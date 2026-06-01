@@ -150,29 +150,29 @@ def category_breakdown(request):
 
     return Response(result)
 
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def add_category(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
+    name = request.data.get("name")
+    type = request.data.get("type")  # income / expense
 
-        name = data.get("name")
-        type = data.get("type")  # income / expense
+    if not name or not type:
+        return Response({"error": "All fields required"}, status=400)
 
-        if not name or not type:
-            return JsonResponse({"error": "All fields required"}, status=400)
+    category = Category.objects.create(name=name, type=type)
 
-        category = Category.objects.create(name=name, type=type)
+    return Response({
+        "id": category.id,
+        "name": category.name,
+        "type": category.type
+    })
 
-        return JsonResponse({
-            "id": category.id,
-            "name": category.name,
-            "type": category.type
-        })
-    
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_categories(request):
     categories = Category.objects.all().values("id", "name", "type")
-    return JsonResponse(list(categories), safe=False)
+    return Response(list(categories))
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -185,15 +185,15 @@ def delete_transaction(request, id):
         return Response({"error": "Not found"}, status=404)
     
 
-@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_category(request, id):
-    if request.method == "DELETE":
-        try:
-            cat = Category.objects.get(id=id)
-            cat.delete()
-            return JsonResponse({"message": "Deleted"})
-        except Category.DoesNotExist:
-            return JsonResponse({"error": "Not found"}, status=404)
+    try:
+        cat = Category.objects.get(id=id)
+        cat.delete()
+        return Response({"message": "Deleted"})
+    except Category.DoesNotExist:
+        return Response({"error": "Not found"}, status=404)
         
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

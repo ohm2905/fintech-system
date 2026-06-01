@@ -90,3 +90,49 @@ class TransactionAPITests(APITestCase):
         response = self.client.get(self.url, {"limit": 2, "page": 1})
         self.assertEqual(len(response.data["data"]), 2)
         self.assertEqual(response.data["total"], 3)
+
+    def test_add_category(self):
+        response = self.client.post("/api/transactions/add-category/", {"name": "Entertainment", "type": "expense"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Category.objects.filter(name="Entertainment").exists())
+
+    def test_get_categories(self):
+        response = self.client.get("/api/transactions/categories/")
+        self.assertEqual(response.status_code, 200)
+        names = [cat["name"] for cat in response.json()]
+        self.assertIn("Salary", names)
+        self.assertIn("Food", names)
+
+    def test_delete_category_success(self):
+        cat = Category.objects.create(name="Entertainment", type="expense")
+        # Ensure category exists
+        self.assertTrue(Category.objects.filter(id=cat.id).exists())
+        response = self.client.delete(f"/api/transactions/delete-category/{cat.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Category.objects.filter(id=cat.id).exists())
+
+    def test_delete_category_not_found(self):
+        response = self.client.delete("/api/transactions/delete-category/9999/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_category_with_transactions_and_budgets(self):
+        cat = Category.objects.create(name="Entertainment", type="expense")
+        Transaction.objects.create(
+            user=self.user,
+            amount=500.0,
+            type="expense",
+            category=cat,
+            date=date(2026, 5, 12)
+        )
+        from analytics.models import Budget
+        Budget.objects.create(
+            user=self.user,
+            category=cat,
+            amount=1000.0,
+            month=date(2026, 5, 1)
+        )
+        response = self.client.delete(f"/api/transactions/delete-category/{cat.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Category.objects.filter(id=cat.id).exists())
+        self.assertFalse(Transaction.objects.filter(category=cat).exists())
+        self.assertFalse(Budget.objects.filter(category=cat).exists())
