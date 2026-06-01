@@ -320,6 +320,9 @@ def stock_forecast(request):
             ticker = yf.Ticker(stock_name)
             history = ticker.history(period="60d")
 
+        # Drop any NaN values in Close to avoid math errors (e.g. current day data might be NaN)
+        history = history.dropna(subset=['Close'])
+
         if history.empty or len(history) < 5:
             return Response({"error": f"Insufficient historical price data found for ticker '{stock_name}'."}, status=400)
 
