@@ -12,14 +12,28 @@ User = get_user_model()
 @api_view(['POST'])
 def signup(request):
     data = request.data
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
 
-    user = User.objects.create(
-        username=data['username'],
-        email=data['email'],
-        password=make_password(data['password'])
-    )
+    if not username or not email or not password:
+        return Response({"error": "Please provide username, email, and password."}, status=400)
 
-    return Response({"message": "User created successfully"})
+    if User.objects.filter(username=username).exists():
+        return Response({"error": "Username is already taken."}, status=400)
+
+    if User.objects.filter(email=email).exists():
+        return Response({"error": "Email is already registered."}, status=400)
+
+    try:
+        user = User.objects.create(
+            username=username,
+            email=email,
+            password=make_password(password)
+        )
+        return Response({"message": "User created successfully"}, status=201)
+    except Exception as e:
+        return Response({"error": f"Failed to create user: {str(e)}"}, status=400)
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
